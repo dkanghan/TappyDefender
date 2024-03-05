@@ -8,14 +8,14 @@ import android.graphics.Rect;
 import java.util.Random;
 
 public class EnemyShip {
-    private Bitmap bitmap;
+    private final Bitmap bitmap;
     private int x,y;
     private int speed = 1;
-    private int maxY;
-    private int minY;
-    private int maxX;
-    private int minX;
-    private Rect hitBox;
+    private final int maxY;
+    private final int minY;
+    private final int maxX;
+    private final int minX;
+    private final Rect hitBox;
 
     public Bitmap getBitmap(){
         return bitmap;
@@ -34,7 +34,7 @@ public class EnemyShip {
     }
     public EnemyShip(Context context, int screenX, int screenY){
         bitmap = BitmapFactory.decodeResource
-                (context.getResources(), R.drawable.enemy2);
+                (context.getResources(), R.drawable.enemy3);
         maxX = screenX;
         maxY = screenY;
         System.out.println(screenY);

@@ -1,10 +1,10 @@
 package com.example.tappydefender;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-
 import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -13,8 +13,8 @@ import android.view.SurfaceView;
 import java.util.ArrayList;
 
 public class TDView extends SurfaceView implements Runnable{
-    private int screenX;
-    private int screenY;
+    private final int screenX;
+    private final int screenY;
 
     volatile boolean playing;
     Thread gameThread = null;
@@ -24,10 +24,10 @@ public class TDView extends SurfaceView implements Runnable{
     public EnemyShip enemy3;
     public ArrayList<SpaceDust> dustList = new ArrayList<SpaceDust>();
 
-    private Paint paint;
+    private final Paint paint;
     private Canvas canvas;
-    private SurfaceHolder ourHolder;
-    private Context context;
+    private final SurfaceHolder ourHolder;
+    private final Context context;
 
     private float distanceRemaining;
     private long timeTaken;
@@ -35,8 +35,8 @@ public class TDView extends SurfaceView implements Runnable{
     private long fastestTime;
     boolean hitDetected = false;
     private boolean gameEnded = false;
-    private SharedPreferences prefs;
-    private SharedPreferences.Editor editor;
+    private final SharedPreferences prefs;
+    private final SharedPreferences.Editor editor;
 
     public TDView(Context context, int x, int y) {
         super(context);
@@ -46,12 +46,12 @@ public class TDView extends SurfaceView implements Runnable{
         screenX = x;
         screenY = y;
 
-        prefs = context.getSharedPreferences("HiScores", context.MODE_PRIVATE);
+        prefs = context.getSharedPreferences("HiScores", Context.MODE_PRIVATE);
 // Initialize the editor ready
         editor = prefs.edit();
 // Load fastest time from a entry in the file
 // labeled "fastestTime"
-// if not available highscore = 1000000
+// if not available highs-core = 1000000
         fastestTime = prefs.getLong("fastestTime", 1000000);
         startGame();
 
@@ -152,6 +152,7 @@ public class TDView extends SurfaceView implements Runnable{
                 gameEnded = true;
                 //game over so do something
             }
+            hitDetected = false;
         }
 
     }
@@ -204,21 +205,33 @@ public class TDView extends SurfaceView implements Runnable{
                         (enemy2.getBitmap(),
                                 enemy2.getX(),
                                 enemy2.getY(), paint);
-                canvas.drawBitmap
-                        (enemy3.getBitmap(),
-                                enemy3.getX(),
-                                enemy3.getY(), paint);
+            canvas.drawBitmap
+                    (enemy3.getBitmap(),
+                            enemy3.getX(),
+                            enemy3.getY(), paint);
 
             paint.setTextAlign(Paint.Align.LEFT);
             paint.setColor(Color.argb(255, 255, 255, 255));
+
+            if (Rect.intersects(player.getHitbox(), enemy1.getHitbox())) {
+                hitDetected = true;
+                enemy1.setX(-100);
+            }
+            if (Rect.intersects(player.getHitbox(), enemy2.getHitbox())) {
+                hitDetected = true;
+                enemy2.setX(-100);
+            }
+            if (Rect.intersects(player.getHitbox(), enemy3.getHitbox())) {
+                hitDetected = true;
+                enemy3.setX(-100);
+            }
 
             if (!gameEnded) {
                 paint.setTextAlign(Paint.Align.LEFT);
                 paint.setColor(Color.argb(255, 255, 255, 255));
                 paint.setTextSize(25);
-                canvas.drawText("Fastest:" + fastestTime + "s", 10, 20, paint);
-                canvas.drawText("Time:" + timeTaken + "s", (float) screenX / 2, 20,
-                        paint);
+                canvas.drawText("Fastest:" + formatTime(fastestTime) + "s", 10, 20, paint);
+                canvas.drawText("Time:" + formatTime(timeTaken) + "s", screenX / 2, 20, paint);
                 canvas.drawText("Distance:" +
                         distanceRemaining / 1000 +
                         " KM", (float) screenX / 3, screenY - 20, paint);
@@ -227,47 +240,49 @@ public class TDView extends SurfaceView implements Runnable{
                 canvas.drawText("Speed:" + player.getSpeed() * 60 +
                         " MPS", ((float) screenX / 3) * 2, screenY - 20, paint);
             }
-            else{
+            else {
                 paint.setTextSize(80);
                 paint.setTextAlign(Paint.Align.CENTER);
-                canvas.drawText("Game Over", (float) screenX /2, 100, paint);
+                canvas.drawText("Game Over", (float) screenX / 2, 100, paint);
                 paint.setTextSize(25);
-                canvas.drawText("Fastest:"+
-                        fastestTime + "s", (float) screenX /2, 160, paint);
-                canvas.drawText("Time:" + timeTaken +
+                canvas.drawText("Fastest:" +
+                        formatTime(fastestTime) + "s", (float) screenX / 2, 160, paint);
+                canvas.drawText("Time:" + formatTime(timeTaken) +
                         "s", (float) screenX / 2, 200, paint);
                 canvas.drawText("Distance remaining:" +
-                        distanceRemaining/1000 + " KM", (float) screenX /2, 240, paint);
+                        distanceRemaining / 1000 + " KM", (float) screenX / 2, 240, paint);
                 paint.setTextSize(80);
-                canvas.drawText("Tap to replay!", (float) screenX /2, 350, paint);
+                canvas.drawText("Tap to replay!", (float) screenX / 2, 350, paint);
             }
-                ourHolder.unlockCanvasAndPost(canvas);
-            }
-
-        if(Rect.intersects(player.getHitbox(), enemy1.getHitbox())){
-            hitDetected = true;
-            enemy1.setX(-100);
-        }
-        if(Rect.intersects(player.getHitbox(), enemy2.getHitbox())){
-            hitDetected = true;
-            enemy2.setX(-100);
-        }
-        if(Rect.intersects(player.getHitbox(), enemy3.getHitbox())){
-            hitDetected = true;
-            enemy3.setX(-100);
+            ourHolder.unlockCanvasAndPost(canvas);
         }
 
 
     }
-    private void control(){
-        try{
-            gameThread.sleep(17);
-        } catch (InterruptedException ignored){
+
+    private String formatTime(long time) {
+        long seconds = (time) / 1000;
+        long thousandths = (time) - (seconds * 1000);
+        String strThousandths = String.valueOf(thousandths);
+        if (thousandths < 100) {
+            strThousandths = "0" + thousandths;
+        }
+        if (thousandths < 10) {
+            strThousandths = "0" + strThousandths;
+        }
+        String stringTime = seconds + "." + strThousandths;
+        return stringTime;
+    }
+
+    private void control() {
+        try {
+            Thread.sleep(17);
+        } catch (InterruptedException ignored) {
 
         }
     }
 
-    public void pause(){
+    public void pause() {
         playing = false;
         try{
             gameThread.join();
